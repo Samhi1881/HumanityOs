@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Premium styling additions */
+@layer base {
+  html, body {
+    @apply m-0 p-0 overflow-x-hidden scroll-smooth;
+    background-color: #0b0f19; /* slate-950 */
+  }
+
+  /* Custom scrollbar for premium feel */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0f172a; /* slate-900 */
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #334155; /* slate-700 */
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #475569; /* slate-600 */
+  }
+}
+
+@layer components {
+  /* Glassmorphism card template */
+  .glass-card {
+    @apply bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-xl shadow-xl;
+  }
+
+  .glass-card-interactive {
+    @apply glass-card transition-all duration-300 hover:border-brand-500/50 hover:bg-slate-900/70 hover:shadow-brand-500/10;
+  }
+}
+
+/* React Flow stylesheet adjustments for dark mode */
+.react-flow {
+  background-color: #0b0f19 !important;
+}
+
+.react-flow__node {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border: 1px solid #475569 !important;
+  border-radius: 8px !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.react-flow__edge-path {
+  stroke: #475569 !important;
+  stroke-width: 2 !important;
+}
+
+.react-flow__handle {
+  background: #6d84ff !important;
+}

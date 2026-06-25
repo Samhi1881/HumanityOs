@@ -1,0 +1,59 @@
+steps:
+  # 1. Build Backend Docker Image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/humanityos/backend:$COMMIT_SHA',
+      '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/humanityos/backend:latest',
+      './backend'
+    ]
+    id: 'build-backend'
+
+  # 2. Push Backend Docker Image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '--all-tags', 'us-central1-docker.pkg.dev/$PROJECT_ID/humanityos/backend']
+    id: 'push-backend'
+    depends_on: ['build-backend']
+
+  # 3. Deploy Backend to Google Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args: [
+      'run', 'deploy', 'humanityos-backend',
+      '--image', 'us-central1-docker.pkg.dev/$PROJECT_ID/humanityos/backend:$COMMIT_SHA',
+      '--region', 'us-central1',
+      '--platform', 'managed',
+      '--allow-unauthenticated',
+      '--set-env-vars', 'ENV=production,STRUCTURED_LOGGING=true,DEBUG=False',
+      # Note: Database and API keys can be wired securely via Secret Manager in Cloud Run settings
+    ]
+    id: 'deploy-backend'
+    depends_on: ['push-backend']
+
+  # 4. Install Frontend dependencies and Build static files
+  - name: 'gcr.io/cloud-builders/npm'
+    args: ['install']
+    dir: 'frontend'
+    id: 'install-frontend'
+
+  - name: 'gcr.io/cloud-builders/npm'
+    args: ['run', 'build']
+    dir: 'frontend'
+    env:
+      - 'VITE_API_URL=https://humanityos-backend-z3qp4axwca-uc.a.run.app/api/v1' # Placeholder replaced dynamically
+    id: 'build-frontend'
+    depends_on: ['install-frontend']
+
+  # 5. Deploy Frontend to Firebase Hosting
+  # Utilizes firebase cli container tool to run deploy
+  - name: 'gcr.io/$PROJECT_ID/firebase'
+    args: ['deploy', '--only', 'hosting']
+    id: 'deploy-frontend'
+    depends_on: ['build-frontend']
+
+images:
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/humanityos/backend:$COMMIT_SHA'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/humanityos/backend:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
