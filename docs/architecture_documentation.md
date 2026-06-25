@@ -26,6 +26,9 @@ graph TD
     end
 ```
 
+![HumanityOS Core Components Architecture](assets/humanityos_architecture.png)
+
+
 ---
 
 ## 🤖 Cognitive Agent Hierarchy & Interaction Workflow
@@ -64,6 +67,9 @@ sequenceDiagram
     end
 ```
 
+![Cognitive Agent Interaction Pipeline](assets/agent_interaction.png)
+
+
 ---
 
 ## 🛠️ ADK Model & Workflow Pipeline
@@ -88,6 +94,9 @@ stateDiagram-v2
     WriteMemory --> PublishEvent : Publish result event to Bus (e.g., "ShelterFull")
     PublishEvent --> [*]
 ```
+
+![ADK Node Workflow Pipeline](assets/adk_workflow.png)
+
 
 ---
 
@@ -115,6 +124,9 @@ graph LR
     ToolRegistry -->|Read/Write| DB[(Postgres / Chroma)]
     ToolRegistry -->|Trigger| Script[Local Automation Tools]
 ```
+
+![Model Context Protocol (MCP) Architecture](assets/mcp_architecture.png)
+
 
 1. **SSE Transport Mount**: FastAPI mounts `/mcp` endpoints using Server-Sent Events (SSE) to facilitate streaming request-response loops.
 2. **Tool Registry**: Declares active scripts and capabilities (e.g. check shelter occupancy, dispatch trucks) as JSON Schemas.
