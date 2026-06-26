@@ -671,7 +671,7 @@ export const App: React.FC = () => {
                 transition={{ duration: 0.15 }}
                 className="w-full h-full relative"
               >
-                <FlowCanvas agentStates={agentStates} />
+                <FlowCanvas agentStates={agentStates} orchestrationResult={orchestrationResult} />
               </motion.div>
             )}
           </AnimatePresence>
