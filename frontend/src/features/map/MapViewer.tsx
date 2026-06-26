@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, ZoomControl, Circle, CircleMarker, useMap } from 'react-leaflet';
+import React, { useEffect, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, ZoomControl, Circle, CircleMarker, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { Route } from 'lucide-react';
 
 // Fix Leaflet marker icons issues
 const DefaultIcon = L.icon({
@@ -53,6 +54,8 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   simulatedMarkers = [],
   simulatedHeatmap
 }) => {
+  const [showRoutes, setShowRoutes] = useState(true);
+
   // Generate mock coordinates around the center coordinates for visual placement
   const generateOffsetCoords = (idx: number, multiplier = 1): [number, number] => {
     const offsets = [
@@ -73,8 +76,21 @@ export const MapViewer: React.FC<MapViewerProps> = ({
           <h2 className="text-sm font-bold tracking-wider text-slate-100 uppercase">Geospatial Operations Center</h2>
           <p className="text-[10px] text-slate-400 font-mono mt-0.5">Active Incident: {incidentName}</p>
         </div>
-        <div className="flex gap-2">
-          <span className="flex items-center text-[10px] text-red-400 font-mono bg-red-950/20 px-2 py-0.5 rounded border border-red-900/50">
+        <div className="flex gap-2.5 items-center">
+          {/* AI Evacuation Routes Toggle */}
+          <button
+            onClick={() => setShowRoutes(!showRoutes)}
+            className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1.5 rounded border transition-colors ${
+              showRoutes 
+                ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20' 
+                : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750'
+            }`}
+          >
+            <Route size={12} />
+            <span>{showRoutes ? 'Evacuation Routes: ON' : 'Evacuation Routes: OFF'}</span>
+          </button>
+          
+          <span className="flex items-center text-[10px] text-red-400 font-mono bg-red-950/20 px-2 py-1.5 rounded border border-red-900/50">
             <span className="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5 animate-ping" />
             Heatmap Active
           </span>
@@ -144,6 +160,69 @@ export const MapViewer: React.FC<MapViewerProps> = ({
               </div>
             </Popup>
           </Marker>
+
+          {/* Safe Shelter coordinates mapping for paths */}
+          {showRoutes && shelters.map((_shelter, idx) => {
+            const shelterPos = generateOffsetCoords(idx, 0.8);
+            
+            // Build a detour path routing around a potential hazard location
+            // Epicenter -> Detour -> Shelter
+            const detourPos: [number, number] = [
+              (centerCoords[0] + shelterPos[0]) / 2 + 0.003,
+              (centerCoords[1] + shelterPos[1]) / 2 - 0.004
+            ];
+
+            return (
+              <Polyline
+                key={`route-shelter-${idx}`}
+                positions={[centerCoords, detourPos, shelterPos]}
+                pathOptions={{
+                  color: '#10b981',
+                  weight: 3,
+                  opacity: 0.75,
+                  dashArray: '5, 8'
+                }}
+              />
+            );
+          })}
+
+          {/* Medical routes mapping for paths */}
+          {showRoutes && hospitals.map((_hospital, idx) => {
+            const hospitalPos = generateOffsetCoords(idx + 2, 1.1);
+            
+            // Epicenter -> Hospital
+            return (
+              <Polyline
+                key={`route-hospital-${idx}`}
+                positions={[centerCoords, hospitalPos]}
+                pathOptions={{
+                  color: '#ef4444',
+                  weight: 3,
+                  opacity: 0.65,
+                  dashArray: '4, 8'
+                }}
+              />
+            );
+          })}
+
+          {/* Volunteer routes mapping for paths */}
+          {showRoutes && Array.from({ length: Math.min(volunteersCount, 5) }).map((_, idx) => {
+            const volPos = generateOffsetCoords(idx + 4, 1.4);
+            
+            // Epicenter -> Volunteer Squad
+            return (
+              <Polyline
+                key={`route-volunteer-${idx}`}
+                positions={[centerCoords, volPos]}
+                pathOptions={{
+                  color: '#3b82f6',
+                  weight: 2.5,
+                  opacity: 0.6,
+                  dashArray: '2, 6'
+                }}
+              />
+            );
+          })}
 
           {/* 2. Safe Shelter Markers (Green) */}
           {shelters.map((shelter, idx) => {
