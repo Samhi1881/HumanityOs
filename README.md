@@ -13,6 +13,129 @@ HumanityOS is a next-generation, production-ready Command Center platform design
 
 ---
 
+## 🏗️ Architecture & System Diagrams
+
+Below are the key architectural diagrams mapping the data flows, agent pipelines, and protocols within HumanityOS.
+
+### 1. Central Component Topology (Core Architecture)
+Maps the relationship between the React client, FastAPI gateway, caches, databases, and LLM providers.
+
+```mermaid
+graph TD
+    User([Responder / Operator]) -->|Interacts| FE[React Web App]
+    FE -->|API Queries| BE[FastAPI Gateway]
+    
+    subgraph "Backend Services Layer"
+        BE -->|Async DB Sessions| DB[(PostgreSQL)]
+        BE -->|Cache & Rate Limit| Cache[(Redis Cache)]
+        BE -->|Document Search| Vector[(ChromaDB)]
+        BE -->|Cognitive Runs| AgentGroup[Orchestrator & Specialists]
+    end
+
+    subgraph "External Integrations"
+        AgentGroup -->|Generative Text| Gemini[Google Gemini API]
+        AgentGroup -->|Dynamic Tools| MCP[External MCP Servers]
+    end
+```
+
+![HumanityOS Core Components Architecture](docs/assets/humanityos_architecture.png)
+
+---
+
+### 2. Cognitive Agent Interaction (Sequence Diagram)
+Shows the sequential and parallel message passing over the global `EventBus` and `SharedMemory` interface.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Operator as Command Operator
+    participant Commander as Commander Agent
+    participant Specialists as Specialist Agents
+    participant Auditor as Decision Auditor
+    participant Bus as Event Bus
+
+    Operator->>Commander: Triggers Incident (e.g., Flood Alert)
+    Commander->>Bus: Publishes "IncidentDetected"
+    Note over Specialists: Specialists check topic subscriptions
+    
+    par Parallel Specialist Run
+        Bus-->>Specialists: Receives Incident Data
+        Specialists->>Specialists: Analyze (Weather, Medical, Vol, Shelter)
+        Specialists->>Commander: Returns recommendations & confidence scores
+    end
+
+    Commander->>Commander: Aggregates observations & runs replanning
+    Commander->>Auditor: Submits aggregate rescue proposal
+    
+    alt Safety & Guidelines Compliant
+        Auditor->>Commander: returns Status: SAFE
+        Commander->>Operator: Serves finalized proposal
+    else Accessibility / Safety Violations Detected
+        Auditor->>Commander: returns Status: WARN (reasons listed)
+        Commander->>Commander: Re-evaluates resources (fallback path)
+        Commander->>Operator: Serves audit alerts & alternate proposal
+    end
+```
+
+![Cognitive Agent Interaction Pipeline](docs/assets/agent_interaction.png)
+
+---
+
+### 3. ADK Model & Workflow (State Diagram)
+Demonstrates how the Agent Development Kit (ADK) guides specialist node execution, event loops, and memory logging.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Initialization : Define Specialist Class
+    Initialization --> RegisterSubscriptions : Bind to EventBus Topics
+    
+    state PipelineExecution {
+        [*] --> IngestEvent : Listen on Subscribed Topic
+        IngestEvent --> ScanState : Read SharedMemoryState Records
+        ScanState --> QueryVectorStore : Search context details (ChromaDB)
+        QueryVectorStore --> PromptGeneration : Construct Specialist prompt
+        PromptGeneration --> GeminiInference : Request LLM Generation
+        GeminiInference --> ValidationCheck : Enforce confidence score thresholds
+    }
+
+    ValidationCheck --> WriteMemory : Write recommendations to Shared Memory
+    WriteMemory --> PublishEvent : Publish result event to Bus (e.g., "ShelterFull")
+    PublishEvent --> [*]
+```
+
+![ADK Node Workflow Pipeline](docs/assets/adk_workflow.png)
+
+---
+
+### 4. Model Context Protocol (MCP) Integration
+Maps how external LLM clients fetch tools from the FastAPI Server using Server-Sent Events (SSE).
+
+```mermaid
+graph LR
+    subgraph "FastAPI Server App"
+        SSE[SSE Transport Mount]
+        Server[MCP Server instance]
+        ToolRegistry[Tool Registry]
+        
+        SSE --- Server
+        Server --- ToolRegistry
+    end
+    
+    subgraph "Active Client"
+        Client[LLM Agent Runner]
+        Client -->|Requests Tool list| SSE
+        Client -->|Invokes Tool command| SSE
+    end
+    
+    ToolRegistry -->|Read/Write| DB[(Postgres / Chroma)]
+    ToolRegistry -->|Trigger| Script[Local Automation Tools]
+```
+
+![Model Context Protocol (MCP) Architecture](docs/assets/mcp_architecture.png)
+
+---
+
+
 ## Technical Documentation Portal
 
 Browse the technical guides to set up, operate, deploy, and present the HumanityOS platform:
